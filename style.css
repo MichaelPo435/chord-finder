@@ -1,0 +1,268 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f0f1a;
+  --surface: #1a1a2e;
+  --surface2: #16213e;
+  --accent: #4a9eff;
+  --accent2: #1a6ecf;
+  --text: #e0e0f0;
+  --muted: #7878aa;
+  --border: #2a2a4a;
+  --white-key: #f5f5f0;
+  --black-key: #1a1a1a;
+  --highlight: #4a9eff;
+  --highlight-dark: #1a6ecf;
+  --radius: 10px;
+}
+
+body {
+  direction: rtl;
+  font-family: "Segoe UI", "Arial Hebrew", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0 1rem 3rem;
+}
+
+/* ── HEADER ── */
+header {
+  text-align: center;
+  padding: 2.5rem 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.subtitle {
+  color: var(--muted);
+  margin-top: 0.4rem;
+  font-size: 0.95rem;
+}
+
+/* ── SEARCH ── */
+.search-section {
+  max-width: 520px;
+  margin: 0 auto 1.5rem;
+}
+.search-wrapper {
+  position: relative;
+}
+#chord-input {
+  width: 100%;
+  padding: 0.85rem 1.2rem;
+  font-size: 1.1rem;
+  direction: ltr;
+  text-align: left;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  outline: none;
+  transition: border-color 0.2s;
+}
+#chord-input:focus {
+  border-color: var(--accent);
+}
+#chord-input::placeholder {
+  direction: rtl;
+  text-align: right;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Suggestions dropdown */
+#suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  list-style: none;
+  z-index: 100;
+  overflow: hidden;
+  max-height: 220px;
+  overflow-y: auto;
+}
+#suggestions:empty { display: none; }
+#suggestions li {
+  padding: 0.65rem 1.2rem;
+  direction: ltr;
+  text-align: left;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.15s;
+}
+#suggestions li:hover,
+#suggestions li.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── RESULTS ── */
+.results-section {
+  max-width: 860px;
+  margin: 0 auto;
+  animation: fadeIn 0.25s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+.chord-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+#chord-title {
+  font-size: 2rem;
+  font-weight: 700;
+  direction: ltr;
+  color: var(--accent);
+  flex: 1;
+}
+#play-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.4rem;
+  font-size: 1rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.15s, transform 0.1s;
+}
+#play-btn:hover { background: var(--accent2); }
+#play-btn:active { transform: scale(0.96); }
+.play-icon { font-size: 0.8rem; }
+
+/* Notes row */
+.notes-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+.notes-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.notes-list {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  direction: ltr;
+}
+.note-pill {
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 20px;
+  padding: 0.2rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* ── DIAGRAMS ── */
+.diagrams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  justify-content: flex-start;
+}
+.diagram-figure {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.5rem 1rem;
+}
+figcaption {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Guitar diagram sizing */
+#guitar-diagram svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Piano diagram — scrollable on small screens */
+#piano-diagram {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#piano-diagram svg {
+  display: block;
+}
+
+/* ── NOT FOUND ── */
+.not-found {
+  text-align: center;
+  color: var(--muted);
+  margin-top: 2rem;
+  font-size: 0.95rem;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 700px) {
+  body { padding: 0 0.75rem 3rem; }
+
+  header { padding: 1.4rem 0.75rem 1rem; margin-bottom: 1.2rem; }
+  header h1 { font-size: 1.4rem; }
+  .subtitle { font-size: 0.82rem; }
+
+  #chord-input {
+    font-size: 1rem;
+    padding: 0.9rem 1rem;   /* taller touch target */
+  }
+  #suggestions li { padding: 0.8rem 1rem; font-size: 1rem; } /* easier to tap */
+
+  .chord-header { gap: 0.6rem; margin-bottom: 0.75rem; }
+  #chord-title { font-size: 1.5rem; }
+  #play-btn {
+    padding: 0.75rem 1.4rem;  /* bigger touch target */
+    font-size: 1rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .notes-row { margin-bottom: 1rem; }
+
+  .diagrams {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .diagram-figure {
+    width: 100%;
+    padding: 1rem 0.75rem 0.75rem;
+    /* guitar diagram: scale SVG to fit */
+  }
+  #guitar-diagram svg {
+    width: 100%;
+    height: auto;
+    max-width: 220px;
+    margin: 0 auto;
+  }
+  /* Piano: fixed height, horizontal scroll */
+  #piano-diagram {
+    overflow-x: auto;
+  }
+  #piano-diagram svg {
+    min-width: 400px; /* keeps keys readable */
+  }
+}

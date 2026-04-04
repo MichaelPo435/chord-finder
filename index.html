@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>מוצא אקורדים</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>🎸 מוצא אקורדים</h1>
+    <p class="subtitle">חפש אקורד וראה איך לנגן אותו על גיטרה ופסנתר</p>
+  </header>
+
+  <main>
+    <section class="search-section">
+      <div class="search-wrapper">
+        <input
+          type="text"
+          id="chord-input"
+          placeholder="הקלד שם אקורד (לדוגמה: Am, C7, Gmaj7)"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="שם האקורד"
+          aria-autocomplete="list"
+          aria-controls="suggestions"
+        >
+        <ul id="suggestions" role="listbox" aria-label="הצעות אקורדים"></ul>
+      </div>
+    </section>
+
+    <section id="results" class="results-section" hidden>
+      <div class="chord-header">
+        <h2 id="chord-title"></h2>
+        <button id="play-btn" aria-label="נגן את האקורד">
+          <span class="play-icon">▶</span> נגן
+        </button>
+      </div>
+
+      <div class="notes-row">
+        <span class="notes-label">תווים:</span>
+        <div id="notes-list" class="notes-list"></div>
+      </div>
+
+      <div class="diagrams">
+        <figure class="diagram-figure">
+          <figcaption>גיטרה</figcaption>
+          <div id="guitar-diagram"></div>
+        </figure>
+        <figure class="diagram-figure">
+          <figcaption>פסנתר</figcaption>
+          <div id="piano-diagram"></div>
+        </figure>
+      </div>
+    </section>
+
+    <p id="not-found" class="not-found" hidden>האקורד לא נמצא במאגר. נסה למשל: Am, C, G7, Bm7</p>
+  </main>
+
+  <script src="chords.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
