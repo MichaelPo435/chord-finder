@@ -170,6 +170,11 @@ header h1 {
   font-size: 0.9rem;
   font-weight: 600;
 }
+.note-pill-root {
+  background: #3d1a1a;
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
 
 /* ── DIAGRAMS ── */
 .diagrams {
@@ -216,6 +221,128 @@ figcaption {
   color: var(--muted);
   margin-top: 2rem;
   font-size: 0.95rem;
+}
+
+/* ── TABS ── */
+.tab-bar {
+  display: flex;
+  max-width: 440px;
+  margin: 0 auto 2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.tab-btn {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  background: var(--surface);
+  color: var(--muted);
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-family: inherit;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+}
+.tab-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+.tab-btn:not(.active):hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+.tab-panel[hidden] { display: none; }
+
+/* ── SCALE CONTROLS ── */
+.scale-controls {
+  max-width: 860px;
+  margin: 0 auto 1.5rem;
+}
+.scale-selects {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.select-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.select-group label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.select-group select {
+  padding: 0.65rem 1rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+  min-width: 160px;
+}
+.select-group select:focus {
+  border-color: var(--accent);
+}
+#play-scale-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.4rem;
+  font-size: 1rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.15s, transform 0.1s;
+  align-self: flex-end;
+}
+#play-scale-btn:hover { background: var(--accent2); }
+#play-scale-btn:active { transform: scale(0.96); }
+
+/* ── SCALE RESULTS ── */
+.scale-results-section {
+  max-width: 860px;
+  margin: 0 auto;
+  animation: fadeIn 0.25s ease;
+}
+.scale-header { margin-bottom: 0.75rem; }
+#scale-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  direction: ltr;
+  color: var(--accent);
+}
+
+/* Scale diagrams: stacked (guitar wide on top, piano below) */
+.scale-diagrams {
+  flex-direction: column;
+  gap: 1.2rem;
+}
+.scale-guitar-figure {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#scale-guitar-diagram svg {
+  display: block;
+  min-width: 500px;
+}
+#scale-piano-diagram {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#scale-piano-diagram svg {
+  display: block;
 }
 
 /* ── RESPONSIVE ── */
@@ -265,4 +392,8 @@ figcaption {
   #piano-diagram svg {
     min-width: 400px; /* keeps keys readable */
   }
+  .tab-btn { font-size: 0.88rem; padding: 0.75rem 0.4rem; }
+  #play-scale-btn { width: 100%; justify-content: center; }
+  .scale-selects { flex-direction: column; align-items: stretch; }
+  .select-group select { min-width: unset; width: 100%; }
 }

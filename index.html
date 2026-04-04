@@ -3,61 +3,137 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>מוצא אקורדים</title>
+  <title>מוצא אקורדים וסולמות</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
-    <h1>🎸 מוצא אקורדים</h1>
-    <p class="subtitle">חפש אקורד וראה איך לנגן אותו על גיטרה ופסנתר</p>
+    <h1>🎸 מוצא אקורדים וסולמות</h1>
+    <p class="subtitle">חפש אקורד או סולם וראה איך לנגן אותו על גיטרה ופסנתר</p>
   </header>
 
   <main>
-    <section class="search-section">
-      <div class="search-wrapper">
-        <input
-          type="text"
-          id="chord-input"
-          placeholder="הקלד שם אקורד (לדוגמה: Am, C7, Gmaj7)"
-          autocomplete="off"
-          spellcheck="false"
-          aria-label="שם האקורד"
-          aria-autocomplete="list"
-          aria-controls="suggestions"
-        >
-        <ul id="suggestions" role="listbox" aria-label="הצעות אקורדים"></ul>
-      </div>
-    </section>
+    <!-- TAB BAR -->
+    <div class="tab-bar" role="tablist">
+      <button class="tab-btn active" id="tab-chords"
+              role="tab" aria-selected="true" aria-controls="panel-chords">
+        🎵 אקורדים
+      </button>
+      <button class="tab-btn" id="tab-scales"
+              role="tab" aria-selected="false" aria-controls="panel-scales">
+        🎼 סולמות ומודים
+      </button>
+    </div>
 
-    <section id="results" class="results-section" hidden>
-      <div class="chord-header">
-        <h2 id="chord-title"></h2>
-        <button id="play-btn" aria-label="נגן את האקורד">
-          <span class="play-icon">▶</span> נגן
-        </button>
-      </div>
+    <!-- ── CHORDS PANEL ── -->
+    <div id="panel-chords" class="tab-panel" role="tabpanel">
 
-      <div class="notes-row">
-        <span class="notes-label">תווים:</span>
-        <div id="notes-list" class="notes-list"></div>
-      </div>
+      <section class="search-section">
+        <div class="search-wrapper">
+          <input
+            type="text"
+            id="chord-input"
+            placeholder="הקלד שם אקורד (לדוגמה: Am, C7, Gmaj7)"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="שם האקורד"
+            aria-autocomplete="list"
+            aria-controls="suggestions"
+          >
+          <ul id="suggestions" role="listbox" aria-label="הצעות אקורדים"></ul>
+        </div>
+      </section>
 
-      <div class="diagrams">
-        <figure class="diagram-figure">
-          <figcaption>גיטרה</figcaption>
-          <div id="guitar-diagram"></div>
-        </figure>
-        <figure class="diagram-figure">
-          <figcaption>פסנתר</figcaption>
-          <div id="piano-diagram"></div>
-        </figure>
-      </div>
-    </section>
+      <section id="results" class="results-section" hidden>
+        <div class="chord-header">
+          <h2 id="chord-title"></h2>
+          <button id="play-btn" aria-label="נגן את האקורד">
+            <span class="play-icon">▶</span> נגן
+          </button>
+        </div>
 
-    <p id="not-found" class="not-found" hidden>האקורד לא נמצא במאגר. נסה למשל: Am, C, G7, Bm7</p>
+        <div class="notes-row">
+          <span class="notes-label">תווים:</span>
+          <div id="notes-list" class="notes-list"></div>
+        </div>
+
+        <div class="diagrams">
+          <figure class="diagram-figure">
+            <figcaption>גיטרה</figcaption>
+            <div id="guitar-diagram"></div>
+          </figure>
+          <figure class="diagram-figure">
+            <figcaption>פסנתר</figcaption>
+            <div id="piano-diagram"></div>
+          </figure>
+        </div>
+      </section>
+
+      <p id="not-found" class="not-found" hidden>האקורד לא נמצא במאגר. נסה למשל: Am, C, G7, Bm7</p>
+
+    </div><!-- /panel-chords -->
+
+    <!-- ── SCALES PANEL ── -->
+    <div id="panel-scales" class="tab-panel" role="tabpanel" hidden>
+
+      <section class="scale-controls">
+        <div class="scale-selects">
+          <div class="select-group">
+            <label for="scale-root">שורש</label>
+            <select id="scale-root" dir="ltr">
+              <option value="C">C</option>
+              <option value="C#">C# / Db</option>
+              <option value="D">D</option>
+              <option value="D#">D# / Eb</option>
+              <option value="E">E</option>
+              <option value="F">F</option>
+              <option value="F#">F# / Gb</option>
+              <option value="G">G</option>
+              <option value="G#">G# / Ab</option>
+              <option value="A">A</option>
+              <option value="A#">A# / Bb</option>
+              <option value="B">B</option>
+            </select>
+          </div>
+          <div class="select-group">
+            <label for="scale-type">סולם / מוד</label>
+            <select id="scale-type">
+              <!-- populated by JS -->
+            </select>
+          </div>
+          <button id="play-scale-btn" aria-label="נגן את הסולם">
+            <span class="play-icon">▶</span> נגן
+          </button>
+        </div>
+      </section>
+
+      <section class="scale-results-section">
+        <div class="scale-header">
+          <h2 id="scale-title"></h2>
+        </div>
+
+        <div class="notes-row">
+          <span class="notes-label">תווים:</span>
+          <div id="scale-notes-list" class="notes-list"></div>
+        </div>
+
+        <div class="diagrams scale-diagrams">
+          <figure class="diagram-figure scale-guitar-figure">
+            <figcaption>גיטרה — כל מיקומי הסולם על הצוואר</figcaption>
+            <div id="scale-guitar-diagram"></div>
+          </figure>
+          <figure class="diagram-figure">
+            <figcaption>פסנתר</figcaption>
+            <div id="scale-piano-diagram"></div>
+          </figure>
+        </div>
+      </section>
+
+    </div><!-- /panel-scales -->
   </main>
 
   <script src="chords.js"></script>
+  <script src="scales.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

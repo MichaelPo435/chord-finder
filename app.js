@@ -1,17 +1,17 @@
 'use strict';
 
 // ════════════════════════════════════════════════════════
-// GUITAR DIAGRAM
+// GUITAR CHORD DIAGRAM
 // ════════════════════════════════════════════════════════
 
 const G = {
-  LEFT:   32,   // left margin (fret label space)
-  TOP:    44,   // top margin (open/muted marker space)
+  LEFT:   32,
+  TOP:    44,
   STRINGS: 6,
   FRETS:   5,
-  SW:     28,   // string spacing (horizontal)
-  FH:     34,   // fret height (vertical)
-  DOT_R:  11,   // dot radius
+  SW:     28,
+  FH:     34,
+  DOT_R:  11,
 };
 G.WIDTH  = G.LEFT + (G.STRINGS - 1) * G.SW + 24;
 G.HEIGHT = G.TOP  + G.FRETS * G.FH + 18;
@@ -46,7 +46,6 @@ function renderGuitar(chord) {
     }));
   }
 
-  // Fret number label (when not starting at fret 1)
   if (g.startFret > 1) {
     svg.appendChild(svgText(g.startFret + 'fr', {
       x: G.LEFT - 6, y: G.TOP + G.FH * 0.5 + 5,
@@ -78,26 +77,23 @@ function renderGuitar(chord) {
     }));
   }
 
-  // Open / muted markers + finger dots
+  // Open / muted / finger dots
   for (let s = 0; s < G.STRINGS; s++) {
     const str = g.strings[s];
     const x = G.LEFT + s * G.SW;
 
     if (str.fret === -1) {
-      // Muted ×
       svg.appendChild(svgText('✕', {
         x, y: G.TOP - 12,
         'text-anchor': 'middle', 'font-size': '14', fill: '#cc4444',
         'font-family': 'sans-serif',
       }));
     } else if (str.fret === 0) {
-      // Open ○
       svg.appendChild(svgEl('circle', {
         cx: x, cy: G.TOP - 14, r: 6,
         fill: 'none', stroke: '#9090bb', 'stroke-width': 1.5,
       }));
     } else {
-      // Finger dot
       const cy = G.TOP + (str.fret - g.startFret) * G.FH + G.FH / 2;
       svg.appendChild(svgEl('circle', {
         cx: x, cy, r: G.DOT_R, fill: '#4a9eff',
@@ -118,23 +114,17 @@ function renderGuitar(chord) {
 
 
 // ════════════════════════════════════════════════════════
-// PIANO DIAGRAM
+// PIANO DIAGRAM (used for both chords and scales)
+// chord-like object: { notes: string[], root?: string }
+// root is highlighted in red (#ff6b6b) when provided
 // ════════════════════════════════════════════════════════
 
-// White key note names per octave (2 octaves: C3..B4)
 const WHITE_NAMES = ['C','D','E','F','G','A','B'];
-const BLACK_MAP = { C:'C#', D:'D#', F:'F#', G:'G#', A:'A#' };
-// Black key x-offset relative to left edge of corresponding white key
-const BLACK_OFFSETS = { C:22, D:22, F:22, G:22, A:22 }; // will be computed
+const BLACK_MAP   = { C:'C#', D:'D#', F:'F#', G:'G#', A:'A#' };
 
 const P = {
-  WW: 36,    // white key width
-  WH: 130,   // white key height
-  BW: 22,    // black key width
-  BH: 82,    // black key height
-  GAP: 2,    // gap between white keys
-  OCTAVES: 2,
-  START_OCT: 3,
+  WW: 36, WH: 130, BW: 22, BH: 82, GAP: 2,
+  OCTAVES: 2, START_OCT: 3,
 };
 
 function buildPianoKeys() {
@@ -161,41 +151,37 @@ function buildPianoKeys() {
 
 function enharmonicMatch(noteName, chordNotes) {
   const ENHARMONIC = {
-    'C#': 'Db', 'Db': 'C#',
-    'D#': 'Eb', 'Eb': 'D#',
-    'F#': 'Gb', 'Gb': 'F#',
-    'G#': 'Ab', 'Ab': 'G#',
-    'A#': 'Bb', 'Bb': 'A#',
-    'B#': 'C',  'Cb': 'B',
-    'E#': 'F',  'Fb': 'E',
+    'C#':'Db','Db':'C#','D#':'Eb','Eb':'D#','F#':'Gb','Gb':'F#',
+    'G#':'Ab','Ab':'G#','A#':'Bb','Bb':'A#','B#':'C','Cb':'B','E#':'F','Fb':'E',
   };
   if (chordNotes.includes(noteName)) return true;
   const enh = ENHARMONIC[noteName];
-  return enh && chordNotes.includes(enh);
+  return !!(enh && chordNotes.includes(enh));
 }
 
-function renderPiano(chord) {
+function renderPiano(chord, targetId) {
+  const id = targetId || 'piano-diagram';
   const allKeys = buildPianoKeys();
   const white = allKeys.filter(k => k.type === 'white');
   const black = allKeys.filter(k => k.type === 'black');
 
   const totalW = P.OCTAVES * 7 * (P.WW + P.GAP) - P.GAP;
-  const totalH = P.WH + 20; // extra for label
+  const totalH = P.WH + 20;
 
   const svg = svgEl('svg', {
     viewBox: `0 0 ${totalW} ${totalH}`,
     width: totalW, height: totalH,
   });
 
-  // White keys
+  const rootNote = chord.root || null;
+
   white.forEach(k => {
     const active = enharmonicMatch(k.name, chord.notes);
+    const isRoot = active && rootNote && enharmonicMatch(k.name, [rootNote]);
     svg.appendChild(svgEl('rect', {
-      x: k.x, y: 0,
-      width: P.WW, height: P.WH,
-      fill: active ? '#4a9eff' : '#f0f0eb',
-      stroke: '#888', 'stroke-width': 1,
-      rx: 3,
+      x: k.x, y: 0, width: P.WW, height: P.WH,
+      fill: isRoot ? '#ff6b6b' : active ? '#4a9eff' : '#f0f0eb',
+      stroke: '#888', 'stroke-width': 1, rx: 3,
     }));
     if (active) {
       svg.appendChild(svgText(k.name, {
@@ -206,15 +192,13 @@ function renderPiano(chord) {
     }
   });
 
-  // Black keys (on top)
   black.forEach(k => {
     const active = enharmonicMatch(k.name, chord.notes);
+    const isRoot = active && rootNote && enharmonicMatch(k.name, [rootNote]);
     svg.appendChild(svgEl('rect', {
-      x: k.x, y: 0,
-      width: P.BW, height: P.BH,
-      fill: active ? '#1a6ecf' : '#1a1a1a',
-      stroke: '#555', 'stroke-width': 1,
-      rx: 2,
+      x: k.x, y: 0, width: P.BW, height: P.BH,
+      fill: isRoot ? '#cc3333' : active ? '#1a6ecf' : '#1a1a1a',
+      stroke: '#555', 'stroke-width': 1, rx: 2,
     }));
     if (active) {
       svg.appendChild(svgText(k.name, {
@@ -234,8 +218,128 @@ function renderPiano(chord) {
     }));
   }
 
-  document.getElementById('piano-diagram').innerHTML = '';
-  document.getElementById('piano-diagram').appendChild(svg);
+  document.getElementById(id).innerHTML = '';
+  document.getElementById(id).appendChild(svg);
+}
+
+
+// ════════════════════════════════════════════════════════
+// SCALE GUITAR DIAGRAM (landscape fretboard)
+// ════════════════════════════════════════════════════════
+
+const SG = {
+  LEFT:       52,
+  TOP:        28,
+  STRING_GAP: 22,
+  FRET_W:     40,
+  DOT_R:       8,
+  NUT_W:       5,
+  STRINGS:     6,
+  FRETS:      12,
+};
+SG.WIDTH  = SG.LEFT + SG.FRETS * SG.FRET_W + 24;
+SG.HEIGHT = SG.TOP  + (SG.STRINGS - 1) * SG.STRING_GAP + 24;
+
+// Standard tuning open-string semitones (0=C): E A D G B e
+const STRING_OPEN = [4, 9, 2, 7, 11, 4];
+const SEMI_TO_NOTE = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const STRING_NAMES = ['E','A','D','G','B','e'];
+
+function computeScalePositions(rootName, intervals) {
+  const rootSemi = NOTE_SEMIS[rootName] ?? 0;
+  const scaleSet = new Set(intervals.map(i => (rootSemi + i) % 12));
+  const positions = [];
+  for (let s = 0; s < 6; s++) {
+    for (let f = 0; f <= SG.FRETS; f++) {
+      const noteSemi = (STRING_OPEN[s] + f) % 12;
+      if (scaleSet.has(noteSemi)) {
+        positions.push({ string: s, fret: f, isRoot: noteSemi === ((rootSemi) % 12) });
+      }
+    }
+  }
+  return positions;
+}
+
+function renderScaleGuitar(positions) {
+  const svg = svgEl('svg', {
+    viewBox: `0 0 ${SG.WIDTH} ${SG.HEIGHT}`,
+    width: SG.WIDTH, height: SG.HEIGHT,
+  });
+
+  // Nut
+  svg.appendChild(svgEl('rect', {
+    x: SG.LEFT - SG.NUT_W / 2, y: SG.TOP,
+    width: SG.NUT_W,
+    height: (SG.STRINGS - 1) * SG.STRING_GAP,
+    fill: '#c0c0d8', rx: 2,
+  }));
+
+  // Fret lines (vertical)
+  for (let f = 1; f <= SG.FRETS; f++) {
+    const x = SG.LEFT + f * SG.FRET_W;
+    svg.appendChild(svgEl('line', {
+      x1: x, y1: SG.TOP,
+      x2: x, y2: SG.TOP + (SG.STRINGS - 1) * SG.STRING_GAP,
+      stroke: '#3a3a5a', 'stroke-width': 1,
+    }));
+  }
+
+  // String lines (horizontal)
+  const stringWidths = [2.5, 2, 1.8, 1.5, 1.2, 1];
+  for (let s = 0; s < SG.STRINGS; s++) {
+    const y = SG.TOP + s * SG.STRING_GAP;
+    svg.appendChild(svgEl('line', {
+      x1: SG.LEFT, y1: y,
+      x2: SG.LEFT + SG.FRETS * SG.FRET_W, y2: y,
+      stroke: '#9090bb', 'stroke-width': stringWidths[s],
+    }));
+  }
+
+  // Fret number labels (top)
+  for (let f = 0; f <= SG.FRETS; f++) {
+    const x = f === 0
+      ? SG.LEFT - SG.FRET_W * 0.35
+      : SG.LEFT + (f - 0.5) * SG.FRET_W;
+    const label = f === 0 ? '0' : String(f);
+    svg.appendChild(svgText(label, {
+      x, y: SG.TOP - 8,
+      'text-anchor': 'middle', 'font-size': '10',
+      fill: '#6060aa', 'font-family': 'monospace',
+    }));
+  }
+
+  // String name labels (left)
+  for (let s = 0; s < SG.STRINGS; s++) {
+    const y = SG.TOP + s * SG.STRING_GAP;
+    svg.appendChild(svgText(STRING_NAMES[s], {
+      x: SG.LEFT - SG.NUT_W - 6, y: y + 4,
+      'text-anchor': 'end', 'font-size': '11',
+      fill: '#8080aa', 'font-family': 'monospace', 'font-weight': 'bold',
+    }));
+  }
+
+  // Scale dots
+  positions.forEach(({ string: s, fret: f, isRoot }) => {
+    const cx = f === 0
+      ? SG.LEFT - 15
+      : SG.LEFT + (f - 0.5) * SG.FRET_W;
+    const cy = SG.TOP + s * SG.STRING_GAP;
+    const fill  = isRoot ? '#ff6b6b' : '#4a9eff';
+    const stroke = isRoot ? '#cc2222' : '#1a6ecf';
+
+    if (f === 0) {
+      // Open string: hollow circle
+      svg.appendChild(svgEl('circle', {
+        cx, cy, r: SG.DOT_R,
+        fill: 'none', stroke: fill, 'stroke-width': 2,
+      }));
+    } else {
+      svg.appendChild(svgEl('circle', { cx, cy, r: SG.DOT_R, fill, stroke, 'stroke-width': 1 }));
+    }
+  });
+
+  document.getElementById('scale-guitar-diagram').innerHTML = '';
+  document.getElementById('scale-guitar-diagram').appendChild(svg);
 }
 
 
@@ -265,26 +369,42 @@ function playChord(chord) {
     const freq = noteToFreq(name, chord.octaves[i]);
     const osc  = ctx.createOscillator();
     const gain = ctx.createGain();
-
     osc.type = 'triangle';
     osc.frequency.value = freq;
-
     const t = ctx.currentTime;
     gain.gain.setValueAtTime(0, t);
     gain.gain.linearRampToValueAtTime(1, t + 0.025);
     gain.gain.setValueAtTime(1, t + 1.1);
     gain.gain.linearRampToValueAtTime(0, t + 1.5);
+    osc.connect(gain); gain.connect(master);
+    osc.start(t); osc.stop(t + 1.6);
+  });
+}
 
-    osc.connect(gain);
-    gain.connect(master);
-    osc.start(t);
-    osc.stop(t + 1.6);
+function playScale(noteNames) {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const master = ctx.createGain();
+  master.gain.value = 0.25;
+  master.connect(ctx.destination);
+
+  noteNames.forEach((name, i) => {
+    const freq = noteToFreq(name, 4);
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    const t = ctx.currentTime + i * 0.2;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.9, t + 0.02);
+    gain.gain.linearRampToValueAtTime(0, t + 0.35);
+    osc.connect(gain); gain.connect(master);
+    osc.start(t); osc.stop(t + 0.4);
   });
 }
 
 
 // ════════════════════════════════════════════════════════
-// SEARCH & WIRING
+// CHORD SEARCH & WIRING
 // ════════════════════════════════════════════════════════
 
 const CHORD_NAMES = Object.keys(window.CHORDS);
@@ -292,27 +412,25 @@ const CHORD_NAMES = Object.keys(window.CHORDS);
 function normalizeInput(raw) {
   const s = raw.trim();
   if (!s) return '';
-  // Capitalise first letter, preserve rest (handles: am→Am, cmaj7→Cmaj7)
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 let currentChord = null;
-let activeIndex = -1;
+let activeIndex  = -1;
 
-const input       = document.getElementById('chord-input');
-const suggList    = document.getElementById('suggestions');
-const resultsEl   = document.getElementById('results');
-const notFoundEl  = document.getElementById('not-found');
-const chordTitle  = document.getElementById('chord-title');
-const notesList   = document.getElementById('notes-list');
-const playBtn     = document.getElementById('play-btn');
+const input      = document.getElementById('chord-input');
+const suggList   = document.getElementById('suggestions');
+const resultsEl  = document.getElementById('results');
+const notFoundEl = document.getElementById('not-found');
+const chordTitle = document.getElementById('chord-title');
+const notesList  = document.getElementById('notes-list');
+const playBtn    = document.getElementById('play-btn');
 
 function showSuggestions(query) {
   if (!query) { hideSuggestions(); return; }
   const matches = CHORD_NAMES.filter(n =>
     n.toLowerCase().startsWith(query.toLowerCase())
   ).slice(0, 8);
-
   suggList.innerHTML = '';
   activeIndex = -1;
   if (!matches.length) { hideSuggestions(); return; }
@@ -320,18 +438,12 @@ function showSuggestions(query) {
     const li = document.createElement('li');
     li.textContent = name;
     li.setAttribute('role', 'option');
-    li.addEventListener('mousedown', e => {
-      e.preventDefault();
-      selectChord(name);
-    });
+    li.addEventListener('mousedown', e => { e.preventDefault(); selectChord(name); });
     suggList.appendChild(li);
   });
 }
 
-function hideSuggestions() {
-  suggList.innerHTML = '';
-  activeIndex = -1;
-}
+function hideSuggestions() { suggList.innerHTML = ''; activeIndex = -1; }
 
 function selectChord(name) {
   input.value = name;
@@ -350,7 +462,6 @@ function renderResults(name) {
   currentChord = chord;
   notFoundEl.hidden = true;
   resultsEl.hidden = false;
-
   chordTitle.textContent = name;
 
   notesList.innerHTML = '';
@@ -362,19 +473,14 @@ function renderResults(name) {
   });
 
   renderGuitar(chord);
-  renderPiano(chord);
+  renderPiano(chord, 'piano-diagram');
 }
 
-// Input events
 input.addEventListener('input', () => {
   const norm = normalizeInput(input.value);
   showSuggestions(norm);
-  if (window.CHORDS[norm]) {
-    renderResults(norm);
-  } else if (!norm) {
-    resultsEl.hidden = true;
-    notFoundEl.hidden = true;
-  }
+  if (window.CHORDS[norm]) renderResults(norm);
+  else if (!norm) { resultsEl.hidden = true; notFoundEl.hidden = true; }
 });
 
 input.addEventListener('keydown', e => {
@@ -390,22 +496,97 @@ input.addEventListener('keydown', e => {
     items.forEach((li, i) => li.classList.toggle('active', i === activeIndex));
   } else if (e.key === 'Enter') {
     e.preventDefault();
-    if (activeIndex >= 0 && items[activeIndex]) {
-      selectChord(items[activeIndex].textContent);
-    } else {
-      const norm = normalizeInput(input.value);
-      if (norm) { hideSuggestions(); renderResults(norm); }
-    }
+    if (activeIndex >= 0 && items[activeIndex]) selectChord(items[activeIndex].textContent);
+    else { const norm = normalizeInput(input.value); if (norm) { hideSuggestions(); renderResults(norm); } }
   } else if (e.key === 'Escape') {
     hideSuggestions();
   }
 });
 
-input.addEventListener('blur', () => {
-  // small delay so mousedown on suggestion fires first
-  setTimeout(hideSuggestions, 150);
+input.addEventListener('blur', () => { setTimeout(hideSuggestions, 150); });
+playBtn.addEventListener('click', () => { if (currentChord) playChord(currentChord); });
+
+
+// ════════════════════════════════════════════════════════
+// SCALES WIRING
+// ════════════════════════════════════════════════════════
+
+const scaleRootSel  = document.getElementById('scale-root');
+const scaleTypeSel  = document.getElementById('scale-type');
+const scaleTitle    = document.getElementById('scale-title');
+const scaleNotesList = document.getElementById('scale-notes-list');
+const playScaleBtn  = document.getElementById('play-scale-btn');
+
+// Populate scale-type dropdown
+Object.entries(window.SCALE_TYPES).forEach(([key, val]) => {
+  const opt = document.createElement('option');
+  opt.value = key;
+  opt.textContent = val.nameHe;
+  scaleTypeSel.appendChild(opt);
 });
 
-playBtn.addEventListener('click', () => {
-  if (currentChord) playChord(currentChord);
+let currentScaleNotes = [];
+
+function renderScale() {
+  const root      = scaleRootSel.value;
+  const typeKey   = scaleTypeSel.value;
+  const scaleType = window.SCALE_TYPES[typeKey];
+  if (!scaleType) return;
+
+  const { intervals, nameHe } = scaleType;
+
+  // Compute note names
+  const rootSemi = NOTE_SEMIS[root] ?? 0;
+  const notes    = intervals.map(i => SEMI_TO_NOTE[(rootSemi + i) % 12]);
+  currentScaleNotes = notes;
+
+  // Title
+  scaleTitle.textContent = root + ' ' + nameHe;
+
+  // Note pills
+  scaleNotesList.innerHTML = '';
+  notes.forEach((n, i) => {
+    const pill = document.createElement('span');
+    pill.className = 'note-pill' + (i === 0 ? ' note-pill-root' : '');
+    pill.textContent = n;
+    scaleNotesList.appendChild(pill);
+  });
+
+  // Guitar scale diagram
+  const positions = computeScalePositions(root, intervals);
+  renderScaleGuitar(positions);
+
+  // Piano
+  renderPiano({ notes, root }, 'scale-piano-diagram');
+}
+
+scaleRootSel.addEventListener('change', renderScale);
+scaleTypeSel.addEventListener('change', renderScale);
+playScaleBtn.addEventListener('click', () => {
+  if (currentScaleNotes.length) playScale(currentScaleNotes);
+});
+
+
+// ════════════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════════════
+
+const tabChords = document.getElementById('tab-chords');
+const tabScales = document.getElementById('tab-scales');
+const panelChords = document.getElementById('panel-chords');
+const panelScales = document.getElementById('panel-scales');
+
+tabChords.addEventListener('click', () => {
+  tabChords.classList.add('active');    tabChords.setAttribute('aria-selected','true');
+  tabScales.classList.remove('active'); tabScales.setAttribute('aria-selected','false');
+  panelChords.hidden = false;
+  panelScales.hidden = true;
+});
+
+tabScales.addEventListener('click', () => {
+  tabScales.classList.add('active');    tabScales.setAttribute('aria-selected','true');
+  tabChords.classList.remove('active'); tabChords.setAttribute('aria-selected','false');
+  panelScales.hidden = false;
+  panelChords.hidden = true;
+  renderScale(); // auto-render on first switch
 });
