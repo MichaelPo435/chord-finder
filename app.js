@@ -27,8 +27,7 @@ function svgText(txt, attrs) {
   return el;
 }
 
-function renderGuitar(chord) {
-  const g = chord.guitar;
+function renderGuitar(g) {
   const svg = svgEl('svg', {
     viewBox: `0 0 ${G.WIDTH} ${G.HEIGHT}`,
     width: G.WIDTH, height: G.HEIGHT,
@@ -415,16 +414,21 @@ function normalizeInput(raw) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-let currentChord = null;
-let activeIndex  = -1;
+let currentChord        = null;
+let activeIndex         = -1;
+let currentVoicingIndex = 0;
 
-const input      = document.getElementById('chord-input');
-const suggList   = document.getElementById('suggestions');
-const resultsEl  = document.getElementById('results');
-const notFoundEl = document.getElementById('not-found');
-const chordTitle = document.getElementById('chord-title');
-const notesList  = document.getElementById('notes-list');
-const playBtn    = document.getElementById('play-btn');
+const input         = document.getElementById('chord-input');
+const suggList      = document.getElementById('suggestions');
+const resultsEl     = document.getElementById('results');
+const notFoundEl    = document.getElementById('not-found');
+const chordTitle    = document.getElementById('chord-title');
+const notesList     = document.getElementById('notes-list');
+const playBtn       = document.getElementById('play-btn');
+const voicingNav    = document.getElementById('voicing-nav');
+const voicingCounter = document.getElementById('voicing-counter');
+const prevVoicingBtn = document.getElementById('prev-voicing');
+const nextVoicingBtn = document.getElementById('next-voicing');
 
 function showSuggestions(query) {
   if (!query) { hideSuggestions(); return; }
@@ -451,6 +455,18 @@ function selectChord(name) {
   renderResults(name);
 }
 
+function updateVoicingNav(chord) {
+  const total = chord.guitars.length;
+  if (total <= 1) {
+    voicingNav.hidden = true;
+    return;
+  }
+  voicingNav.hidden = false;
+  voicingCounter.textContent = (currentVoicingIndex + 1) + ' / ' + total;
+  prevVoicingBtn.disabled = currentVoicingIndex === 0;
+  nextVoicingBtn.disabled = currentVoicingIndex === total - 1;
+}
+
 function renderResults(name) {
   const chord = window.CHORDS[name];
   if (!chord) {
@@ -460,6 +476,7 @@ function renderResults(name) {
     return;
   }
   currentChord = chord;
+  currentVoicingIndex = 0;
   notFoundEl.hidden = true;
   resultsEl.hidden = false;
   chordTitle.textContent = name;
@@ -472,9 +489,26 @@ function renderResults(name) {
     notesList.appendChild(pill);
   });
 
-  renderGuitar(chord);
+  renderGuitar(chord.guitars[0]);
+  updateVoicingNav(chord);
   renderPiano(chord, 'piano-diagram');
 }
+
+prevVoicingBtn.addEventListener('click', () => {
+  if (currentChord && currentVoicingIndex > 0) {
+    currentVoicingIndex--;
+    renderGuitar(currentChord.guitars[currentVoicingIndex]);
+    updateVoicingNav(currentChord);
+  }
+});
+
+nextVoicingBtn.addEventListener('click', () => {
+  if (currentChord && currentVoicingIndex < currentChord.guitars.length - 1) {
+    currentVoicingIndex++;
+    renderGuitar(currentChord.guitars[currentVoicingIndex]);
+    updateVoicingNav(currentChord);
+  }
+});
 
 input.addEventListener('input', () => {
   const norm = normalizeInput(input.value);

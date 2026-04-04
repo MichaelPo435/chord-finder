@@ -215,6 +215,41 @@ figcaption {
   display: block;
 }
 
+/* ── VOICING NAV ── */
+.voicing-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+.voicing-nav button {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 0.2rem 0.75rem;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.voicing-nav button:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+.voicing-nav button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.voicing-nav span {
+  font-size: 0.85rem;
+  color: var(--muted);
+  min-width: 3rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── NOT FOUND ── */
 .not-found {
   text-align: center;
