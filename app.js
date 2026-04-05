@@ -660,10 +660,209 @@ Object.entries(TUNINGS).forEach(([key, t]) => {
 
 tuningSel.addEventListener('change', () => {
   currentTuning = TUNINGS[tuningSel.value];
-  // Re-render chord diagram if one is showing
   if (currentChord) renderGuitar(currentChord.guitars[currentVoicingIndex]);
-  // Re-render scale diagram if that panel is active
   if (!panelScales.hidden) renderScale();
+  renderTunerStrings();
+});
+
+
+// ════════════════════════════════════════════════════════
+// GUITAR TUNER
+// ════════════════════════════════════════════════════════
+
+// Standard-tuning MIDI note for each open string (E2 A2 D3 G3 B3 e4)
+const STANDARD_MIDI = [40, 45, 50, 55, 59, 64];
+
+function getTuningMidi(tuning) {
+  return tuning.semis.map((semi, s) => {
+    const diff = ((semi - TUNINGS.standard.semis[s] + 18) % 12) - 6;
+    return STANDARD_MIDI[s] + diff;
+  });
+}
+
+function playReferenceTone(freq) {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  const t = ctx.currentTime;
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(0.35, t + 0.04);
+  gain.gain.setValueAtTime(0.35, t + 2.6);
+  gain.gain.linearRampToValueAtTime(0, t + 3);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + 3.1);
+}
+
+function renderTunerStrings() {
+  const container = document.getElementById('string-buttons');
+  if (!container) return;
+  container.innerHTML = '';
+  const midiNotes = getTuningMidi(currentTuning);
+  midiNotes.forEach((midi, s) => {
+    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    const octave = Math.floor(midi / 12) - 1;
+    const stringNum = 6 - s;
+    const btn = document.createElement('button');
+    btn.className = 'string-btn';
+    btn.dataset.stringIndex = s;
+    btn.innerHTML =
+      `<span class="string-btn-num">מיתר ${stringNum}</span>` +
+      `<span class="string-btn-note">${currentTuning.names[s]}<sup>${octave}</sup></span>` +
+      `<span class="string-btn-freq">${freq.toFixed(1)} Hz</span>`;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.string-btn').forEach(b => b.classList.remove('playing'));
+      btn.classList.add('playing');
+      setTimeout(() => btn.classList.remove('playing'), 3100);
+      playReferenceTone(freq);
+    });
+    container.appendChild(btn);
+  });
+}
+
+// Autocorrelation pitch detection (guitar range: 70–1400 Hz)
+function autoCorrelate(buf, sampleRate) {
+  const n = buf.length;
+  let rms = 0;
+  for (let i = 0; i < n; i++) rms += buf[i] * buf[i];
+  if (Math.sqrt(rms / n) < 0.012) return -1;
+
+  let r1 = 0, r2 = n - 1;
+  for (let i = 0; i < n / 2; i++) { if (Math.abs(buf[i]) < 0.2) { r1 = i; break; } }
+  for (let i = 1; i < n / 2; i++) { if (Math.abs(buf[n - i]) < 0.2) { r2 = n - i; break; } }
+  const b = buf.slice(r1, r2);
+  const L = b.length;
+  const c = new Float32Array(L);
+  for (let i = 0; i < L; i++)
+    for (let j = 0; j < L - i; j++)
+      c[i] += b[j] * b[j + i];
+
+  let d = 0;
+  while (d < L - 1 && c[d] > c[d + 1]) d++;
+  let maxC = -1, T = -1;
+  for (let i = d; i < L; i++) { if (c[i] > maxC) { maxC = c[i]; T = i; } }
+  if (T <= 0 || T >= L - 1) return -1;
+
+  const a = (c[T-1] + c[T+1] - 2*c[T]) / 2;
+  const bb = (c[T+1] - c[T-1]) / 2;
+  if (a) T -= bb / (2 * a);
+  const freq = sampleRate / T;
+  return (freq > 70 && freq < 1400) ? freq : -1;
+}
+
+function updateTunerNeedle(cents) {
+  const needle = document.getElementById('tuner-needle');
+  if (!needle) return;
+  if (cents === null) {
+    needle.setAttribute('x2', 150);
+    needle.setAttribute('y2', 42);
+    needle.setAttribute('stroke', '#4a4a7a');
+    return;
+  }
+  const clamped = Math.max(-50, Math.min(50, cents));
+  const theta = (90 - (clamped / 50) * 70) * Math.PI / 180;
+  needle.setAttribute('x2', (150 + 108 * Math.cos(theta)).toFixed(1));
+  needle.setAttribute('y2', (150 - 108 * Math.sin(theta)).toFixed(1));
+  const abs = Math.abs(clamped);
+  needle.setAttribute('stroke', abs < 5 ? '#44ee44' : abs < 15 ? '#f0c040' : '#ee4444');
+}
+
+let tunerActive = false;
+let tunerStream = null;
+let tunerAudioCtx = null;
+let tunerAnalyser = null;
+let tunerTimerId = null;
+
+async function startTuner() {
+  try {
+    tunerStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    tunerAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = tunerAudioCtx.createMediaStreamSource(tunerStream);
+    tunerAnalyser = tunerAudioCtx.createAnalyser();
+    tunerAnalyser.fftSize = 2048;
+    source.connect(tunerAnalyser);
+    tunerActive = true;
+    document.getElementById('tuner-display').hidden = false;
+    const btn = document.getElementById('tuner-mic-btn');
+    btn.textContent = '⏹ עצור';
+    btn.classList.add('active');
+    tunerTick();
+  } catch (e) {
+    alert('לא ניתן לגשת למיקרופון. אנא אפשר גישה בהגדרות הדפדפן.');
+  }
+}
+
+function stopTuner() {
+  tunerActive = false;
+  if (tunerTimerId) { clearTimeout(tunerTimerId); tunerTimerId = null; }
+  if (tunerStream) { tunerStream.getTracks().forEach(t => t.stop()); tunerStream = null; }
+  if (tunerAudioCtx) { tunerAudioCtx.close(); tunerAudioCtx = null; }
+  const btn = document.getElementById('tuner-mic-btn');
+  if (btn) { btn.textContent = '🎤 הפעל מיקרופון'; btn.classList.remove('active'); }
+  const disp = document.getElementById('tuner-display');
+  if (disp) disp.hidden = true;
+}
+
+function tunerTick() {
+  if (!tunerActive) return;
+  const buf = new Float32Array(tunerAnalyser.fftSize);
+  tunerAnalyser.getFloatTimeDomainData(buf);
+  const freq = autoCorrelate(buf, tunerAudioCtx.sampleRate);
+
+  const noteEl    = document.getElementById('tuner-note');
+  const octaveEl  = document.getElementById('tuner-octave');
+  const freqEl    = document.getElementById('tuner-freq');
+  const statusEl  = document.getElementById('tuner-status');
+  const tuningMidi = getTuningMidi(currentTuning);
+
+  if (freq > 0) {
+    const midi    = 12 * Math.log2(freq / 440) + 69;
+    const rounded = Math.round(midi);
+    const cents   = (midi - rounded) * 100;
+    const name    = SEMI_TO_NOTE[((rounded % 12) + 12) % 12];
+    const octave  = Math.floor(rounded / 12) - 1;
+
+    noteEl.textContent  = name;
+    octaveEl.textContent = octave;
+    freqEl.textContent  = freq.toFixed(1) + ' Hz';
+
+    const abs = Math.abs(cents);
+    if (abs < 5) {
+      statusEl.textContent = '✓ בכיוון';
+      statusEl.className = 'tuner-status in-tune';
+    } else if (cents < 0) {
+      statusEl.textContent = `↑ ${abs.toFixed(0)} סנטים — נמוך מדי`;
+      statusEl.className = 'tuner-status flat';
+    } else {
+      statusEl.textContent = `↓ ${abs.toFixed(0)} סנטים — גבוה מדי`;
+      statusEl.className = 'tuner-status sharp';
+    }
+    updateTunerNeedle(cents);
+
+    // Highlight matching string button (same note class, nearest octave)
+    document.querySelectorAll('.string-btn').forEach(btn => {
+      const s = Number(btn.dataset.stringIndex);
+      const match = ((tuningMidi[s] - rounded + 6 + 120) % 12) === 0;
+      btn.classList.toggle('matching', match);
+    });
+  } else {
+    noteEl.textContent   = '—';
+    octaveEl.textContent = '';
+    freqEl.textContent   = '';
+    statusEl.textContent = 'מנגן מיתר...';
+    statusEl.className   = 'tuner-status waiting';
+    updateTunerNeedle(null);
+    document.querySelectorAll('.string-btn').forEach(b => b.classList.remove('matching'));
+  }
+
+  tunerTimerId = setTimeout(tunerTick, 50); // ~20 fps
+}
+
+document.getElementById('tuner-mic-btn').addEventListener('click', () => {
+  if (tunerActive) stopTuner(); else startTuner();
 });
 
 
@@ -671,22 +870,27 @@ tuningSel.addEventListener('change', () => {
 // TABS
 // ════════════════════════════════════════════════════════
 
-const tabChords = document.getElementById('tab-chords');
-const tabScales = document.getElementById('tab-scales');
+const tabChords  = document.getElementById('tab-chords');
+const tabScales  = document.getElementById('tab-scales');
+const tabTuner   = document.getElementById('tab-tuner');
 const panelChords = document.getElementById('panel-chords');
 const panelScales = document.getElementById('panel-scales');
+const panelTuner  = document.getElementById('panel-tuner');
 
-tabChords.addEventListener('click', () => {
-  tabChords.classList.add('active');    tabChords.setAttribute('aria-selected','true');
-  tabScales.classList.remove('active'); tabScales.setAttribute('aria-selected','false');
-  panelChords.hidden = false;
-  panelScales.hidden = true;
-});
+const ALL_TABS   = [tabChords, tabScales, tabTuner];
+const ALL_PANELS = [panelChords, panelScales, panelTuner];
 
-tabScales.addEventListener('click', () => {
-  tabScales.classList.add('active');    tabScales.setAttribute('aria-selected','true');
-  tabChords.classList.remove('active'); tabChords.setAttribute('aria-selected','false');
-  panelScales.hidden = false;
-  panelChords.hidden = true;
-  renderScale(); // auto-render on first switch
-});
+function setActiveTab(activeTab, activePanel, onEnter) {
+  ALL_TABS.forEach(t => {
+    t.classList.toggle('active', t === activeTab);
+    t.setAttribute('aria-selected', t === activeTab ? 'true' : 'false');
+  });
+  ALL_PANELS.forEach(p => { p.hidden = p !== activePanel; });
+  // Stop mic tuner when leaving the tuner panel
+  if (activePanel !== panelTuner && tunerActive) stopTuner();
+  if (onEnter) onEnter();
+}
+
+tabChords.addEventListener('click', () => setActiveTab(tabChords, panelChords));
+tabScales.addEventListener('click', () => setActiveTab(tabScales, panelScales, renderScale));
+tabTuner.addEventListener('click',  () => setActiveTab(tabTuner,  panelTuner,  renderTunerStrings));

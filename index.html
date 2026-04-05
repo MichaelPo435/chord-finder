@@ -23,14 +23,10 @@
               role="tab" aria-selected="false" aria-controls="panel-scales">
         🎼 סולמות ומודים
       </button>
-    </div>
-
-    <!-- ── TUNING BAR ── -->
-    <div class="tuning-bar">
-      <label for="tuning-select">כיוון גיטרה:</label>
-      <select id="tuning-select" dir="ltr">
-        <!-- populated by JS -->
-      </select>
+      <button class="tab-btn" id="tab-tuner"
+              role="tab" aria-selected="false" aria-controls="panel-tuner">
+        🎸 כוון גיטרה
+      </button>
     </div>
 
     <!-- ── CHORDS PANEL ── -->
@@ -143,6 +139,62 @@
       </section>
 
     </div><!-- /panel-scales -->
+
+    <!-- ── TUNER PANEL ── -->
+    <div id="panel-tuner" class="tab-panel" role="tabpanel" hidden>
+
+      <!-- Tuning type selector -->
+      <section class="tuner-section">
+        <div class="select-group tuner-select-group">
+          <label for="tuning-select">סוג כיוון</label>
+          <select id="tuning-select" dir="ltr"><!-- populated by JS --></select>
+        </div>
+      </section>
+
+      <!-- Reference tones -->
+      <section class="tuner-section">
+        <h3 class="tuner-section-title">צלילי ייחוס</h3>
+        <p class="tuner-section-hint">לחץ על מיתר כדי לשמוע את הצליל הנכון ולכוון אליו</p>
+        <div class="string-buttons" id="string-buttons"></div>
+      </section>
+
+      <!-- Live mic tuner -->
+      <section class="tuner-section">
+        <h3 class="tuner-section-title">כיוון אוטומטי — מיקרופון</h3>
+        <p class="tuner-section-hint">הפעל מיקרופון, נגן מיתר ובדוק אם הוא בכיוון</p>
+        <div class="tuner-mic-row">
+          <button id="tuner-mic-btn" class="tuner-mic-btn">🎤 הפעל מיקרופון</button>
+        </div>
+        <div id="tuner-display" hidden>
+          <div class="tuner-note-row">
+            <span id="tuner-note" class="tuner-note">—</span><sup id="tuner-octave" class="tuner-octave"></sup>
+            <span id="tuner-freq" class="tuner-freq"></span>
+          </div>
+          <div class="tuner-meter-wrap">
+            <svg viewBox="0 0 300 170" width="280" height="158" style="display:block;margin:0 auto">
+              <!-- Background arc flat→sharp (dark) -->
+              <path d="M 42 111 A 115 115 0 0 1 258 111"
+                    fill="none" stroke="#1a1a3a" stroke-width="22" stroke-linecap="round"/>
+              <!-- In-tune zone center ±10° (green) -->
+              <path d="M 130 37 A 115 115 0 0 1 170 37"
+                    fill="none" stroke="#1a4a2a" stroke-width="22" stroke-linecap="round"/>
+              <!-- ♭ / ♯ labels -->
+              <text x="8" y="120" font-size="22" fill="#884444" font-family="serif">♭</text>
+              <text x="270" y="120" font-size="22" fill="#884444" font-family="serif">♯</text>
+              <!-- Center tick -->
+              <line x1="150" y1="18" x2="150" y2="34" stroke="#3a7a3a" stroke-width="3" stroke-linecap="round"/>
+              <!-- Needle (starts pointing up = in tune) -->
+              <line id="tuner-needle" x1="150" y1="150" x2="150" y2="42"
+                    stroke="#4a4a7a" stroke-width="3.5" stroke-linecap="round"/>
+              <!-- Pivot -->
+              <circle cx="150" cy="150" r="8" fill="#1a1a2e" stroke="#5555aa" stroke-width="2"/>
+            </svg>
+          </div>
+          <div id="tuner-status" class="tuner-status waiting">מנגן מיתר...</div>
+        </div>
+      </section>
+
+    </div><!-- /panel-tuner -->
   </main>
 
   <script src="chords.js"></script>
