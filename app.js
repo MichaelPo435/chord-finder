@@ -16,6 +16,24 @@ const G = {
 G.WIDTH  = G.LEFT + (G.STRINGS - 1) * G.SW + 20;
 G.HEIGHT = G.TOP  + G.FRETS * G.FH + 30;  // extra space for string names at bottom
 
+// ════════════════════════════════════════════════════════
+// TUNINGS
+// ════════════════════════════════════════════════════════
+
+const TUNINGS = {
+  standard:    { label: 'Standard — E A D G B e',           names: ['E','A','D','G','B','e'],       semis: [4,9,2,7,11,4]  },
+  'drop-d':    { label: 'Drop D — D A D G B e',             names: ['D','A','D','G','B','e'],       semis: [2,9,2,7,11,4]  },
+  'drop-c':    { label: 'Drop C — C G C F A D',             names: ['C','G','C','F','A','D'],       semis: [0,7,0,5,9,2]   },
+  'half-down': { label: '½ Tone Down — Eb Ab Db Gb Bb eb',  names: ['Eb','Ab','Db','Gb','Bb','eb'], semis: [3,8,1,6,10,3]  },
+  'full-down': { label: 'D Standard — D G C F A D',         names: ['D','G','C','F','A','d'],       semis: [2,7,0,5,9,2]   },
+  'open-g':    { label: 'Open G — D G D G B D',             names: ['D','G','D','G','B','D'],       semis: [2,7,2,7,11,2]  },
+  'open-d':    { label: 'Open D — D A D F# A D',            names: ['D','A','D','F#','A','D'],      semis: [2,9,2,6,9,2]   },
+  'open-e':    { label: 'Open E — E B E G# B E',            names: ['E','B','E','G#','B','E'],      semis: [4,11,4,8,11,4] },
+  dadgad:      { label: 'DADGAD — D A D G A D',             names: ['D','A','D','G','A','D'],       semis: [2,9,2,7,9,2]   },
+};
+
+let currentTuning = TUNINGS.standard;
+
 function svgEl(tag, attrs) {
   const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
@@ -123,8 +141,8 @@ function renderGuitar(g) {
     }
   }
 
-  // String name labels at the bottom
-  const STRING_NAMES = ['E', 'A', 'D', 'G', 'B', 'e'];
+  // String name labels at the bottom (reflect active tuning)
+  const STRING_NAMES = currentTuning.names;
   const labelY = G.TOP + G.FRETS * G.FH + 20;
   for (let s = 0; s < G.STRINGS; s++) {
     const x = G.LEFT + s * G.SW;
@@ -267,10 +285,7 @@ const SG = {
 SG.WIDTH  = SG.LEFT + SG.FRETS * SG.FRET_W + 24;
 SG.HEIGHT = SG.TOP  + (SG.STRINGS - 1) * SG.STRING_GAP + 24;
 
-// Standard tuning open-string semitones (0=C): E A D G B e
-const STRING_OPEN = [4, 9, 2, 7, 11, 4];
 const SEMI_TO_NOTE = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-const STRING_NAMES = ['E','A','D','G','B','e'];
 
 function computeScalePositions(rootName, intervals) {
   const rootSemi = NOTE_SEMIS[rootName] ?? 0;
@@ -278,7 +293,7 @@ function computeScalePositions(rootName, intervals) {
   const positions = [];
   for (let s = 0; s < 6; s++) {
     for (let f = 0; f <= SG.FRETS; f++) {
-      const noteSemi = (STRING_OPEN[s] + f) % 12;
+      const noteSemi = (currentTuning.semis[s] + f) % 12;
       if (scaleSet.has(noteSemi)) {
         positions.push({ string: s, fret: f, isRoot: noteSemi === ((rootSemi) % 12) });
       }
@@ -335,10 +350,10 @@ function renderScaleGuitar(positions) {
     }));
   }
 
-  // String name labels (left)
+  // String name labels (left) — reflect active tuning
   for (let s = 0; s < SG.STRINGS; s++) {
     const y = SG.TOP + s * SG.STRING_GAP;
-    svg.appendChild(svgText(STRING_NAMES[s], {
+    svg.appendChild(svgText(currentTuning.names[s], {
       x: SG.LEFT - SG.NUT_W - 6, y: y + 4,
       'text-anchor': 'end', 'font-size': '11',
       fill: '#8080aa', 'font-family': 'monospace', 'font-weight': 'bold',
@@ -626,6 +641,29 @@ scaleRootSel.addEventListener('change', renderScale);
 scaleTypeSel.addEventListener('change', renderScale);
 playScaleBtn.addEventListener('click', () => {
   if (currentScaleNotes.length) playScale(currentScaleNotes);
+});
+
+
+// ════════════════════════════════════════════════════════
+// TUNING SELECTOR
+// ════════════════════════════════════════════════════════
+
+const tuningSel = document.getElementById('tuning-select');
+
+// Populate options from TUNINGS data
+Object.entries(TUNINGS).forEach(([key, t]) => {
+  const opt = document.createElement('option');
+  opt.value = key;
+  opt.textContent = t.label;
+  tuningSel.appendChild(opt);
+});
+
+tuningSel.addEventListener('change', () => {
+  currentTuning = TUNINGS[tuningSel.value];
+  // Re-render chord diagram if one is showing
+  if (currentChord) renderGuitar(currentChord.guitars[currentVoicingIndex]);
+  // Re-render scale diagram if that panel is active
+  if (!panelScales.hidden) renderScale();
 });
 
 
