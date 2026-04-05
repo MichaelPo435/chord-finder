@@ -5,16 +5,16 @@
 // ════════════════════════════════════════════════════════
 
 const G = {
-  LEFT:   32,
+  LEFT:   46,   // extra space for fret number labels on the left
   TOP:    44,
   STRINGS: 6,
   FRETS:   5,
-  SW:     28,
-  FH:     34,
-  DOT_R:  11,
+  SW:     30,
+  FH:     36,
+  DOT_R:  12,
 };
-G.WIDTH  = G.LEFT + (G.STRINGS - 1) * G.SW + 24;
-G.HEIGHT = G.TOP  + G.FRETS * G.FH + 18;
+G.WIDTH  = G.LEFT + (G.STRINGS - 1) * G.SW + 20;
+G.HEIGHT = G.TOP  + G.FRETS * G.FH + 30;  // extra space for string names at bottom
 
 function svgEl(tag, attrs) {
   const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
@@ -33,32 +33,46 @@ function renderGuitar(g) {
     width: G.WIDTH, height: G.HEIGHT,
   });
 
-  // Fret lines
-  for (let f = 0; f <= G.FRETS; f++) {
+  // Nut or top border
+  const nutY = G.TOP;
+  const isNut = g.startFret === 1;
+  svg.appendChild(svgEl('rect', {
+    x: G.LEFT, y: nutY - (isNut ? 4 : 1),
+    width: (G.STRINGS - 1) * G.SW,
+    height: isNut ? 7 : 2,
+    fill: isNut ? '#e0e0ff' : '#6060aa', rx: isNut ? 2 : 0,
+  }));
+
+  // Fret lines (1..FRETS) + fret number labels on left
+  for (let f = 1; f <= G.FRETS; f++) {
     const y = G.TOP + f * G.FH;
-    const isNut = (f === 0 && g.startFret === 1);
     svg.appendChild(svgEl('rect', {
-      x: G.LEFT, y: y - (isNut ? 3 : 0.5),
+      x: G.LEFT, y: y - 0.75,
       width: (G.STRINGS - 1) * G.SW,
-      height: isNut ? 6 : 1.5,
-      fill: '#b0b0cc', rx: isNut ? 2 : 0,
+      height: 1.5,
+      fill: '#6060aa',
     }));
   }
 
-  if (g.startFret > 1) {
-    svg.appendChild(svgText(g.startFret + 'fr', {
-      x: G.LEFT - 6, y: G.TOP + G.FH * 0.5 + 5,
-      'text-anchor': 'end', 'font-size': '12', fill: '#9090bb',
-      'font-family': 'monospace',
+  // Fret number label for each row on the left
+  for (let row = 0; row < G.FRETS; row++) {
+    const fretNum = g.startFret + row;
+    const y = G.TOP + row * G.FH + G.FH / 2 + 5;
+    svg.appendChild(svgText(fretNum, {
+      x: G.LEFT - 8, y,
+      'text-anchor': 'end', 'font-size': '11',
+      fill: fretNum === g.startFret && g.startFret > 1 ? '#f0c040' : '#7878aa',
+      'font-family': 'monospace', 'font-weight': fretNum === g.startFret && g.startFret > 1 ? 'bold' : 'normal',
     }));
   }
 
   // String lines
+  const STRING_WEIGHTS = [2.2, 2.0, 1.8, 1.5, 1.3, 1.1]; // thick low E → thin high e
   for (let s = 0; s < G.STRINGS; s++) {
     const x = G.LEFT + s * G.SW;
     svg.appendChild(svgEl('line', {
       x1: x, y1: G.TOP, x2: x, y2: G.TOP + G.FRETS * G.FH,
-      stroke: '#9090bb', 'stroke-width': s === 0 || s === 5 ? 2 : 1.5,
+      stroke: '#8888bb', 'stroke-width': STRING_WEIGHTS[s],
     }));
   }
 
@@ -69,10 +83,10 @@ function renderGuitar(g) {
     const bx1 = G.LEFT + fromString * G.SW;
     const bx2 = G.LEFT + toString * G.SW;
     svg.appendChild(svgEl('rect', {
-      x: bx1 - G.DOT_R, y: by - G.DOT_R,
-      width: bx2 - bx1 + G.DOT_R * 2,
+      x: bx1 - G.DOT_R + 1, y: by - G.DOT_R,
+      width: bx2 - bx1 + G.DOT_R * 2 - 2,
       height: G.DOT_R * 2,
-      rx: G.DOT_R, fill: '#4a9eff', opacity: '0.85',
+      rx: G.DOT_R, fill: '#4a9eff', opacity: '0.9',
     }));
   }
 
@@ -82,29 +96,42 @@ function renderGuitar(g) {
     const x = G.LEFT + s * G.SW;
 
     if (str.fret === -1) {
-      svg.appendChild(svgText('✕', {
-        x, y: G.TOP - 12,
-        'text-anchor': 'middle', 'font-size': '14', fill: '#cc4444',
-        'font-family': 'sans-serif',
-      }));
+      // Muted: ✕ above nut
+      const mx = x, my = G.TOP - 13;
+      svg.appendChild(svgEl('line', { x1: mx-6, y1: my-6, x2: mx+6, y2: my+6, stroke: '#cc4444', 'stroke-width': 2, 'stroke-linecap': 'round' }));
+      svg.appendChild(svgEl('line', { x1: mx+6, y1: my-6, x2: mx-6, y2: my+6, stroke: '#cc4444', 'stroke-width': 2, 'stroke-linecap': 'round' }));
     } else if (str.fret === 0) {
+      // Open: hollow circle above nut
       svg.appendChild(svgEl('circle', {
-        cx: x, cy: G.TOP - 14, r: 6,
-        fill: 'none', stroke: '#9090bb', 'stroke-width': 1.5,
+        cx: x, cy: G.TOP - 13, r: 7,
+        fill: 'none', stroke: '#9090cc', 'stroke-width': 2,
       }));
     } else {
+      // Finger dot
       const cy = G.TOP + (str.fret - g.startFret) * G.FH + G.FH / 2;
-      svg.appendChild(svgEl('circle', {
-        cx: x, cy, r: G.DOT_R, fill: '#4a9eff',
-      }));
+      // Shadow
+      svg.appendChild(svgEl('circle', { cx: x+1, cy: cy+1, r: G.DOT_R, fill: 'rgba(0,0,0,0.3)' }));
+      svg.appendChild(svgEl('circle', { cx: x, cy, r: G.DOT_R, fill: '#4a9eff' }));
       if (str.finger) {
         svg.appendChild(svgText(str.finger, {
           x, y: cy + 4,
-          'text-anchor': 'middle', 'font-size': '11',
-          fill: '#fff', 'font-weight': 'bold',
+          'text-anchor': 'middle', 'font-size': '12',
+          fill: '#fff', 'font-weight': 'bold', 'font-family': 'sans-serif',
         }));
       }
     }
+  }
+
+  // String name labels at the bottom
+  const STRING_NAMES = ['E', 'A', 'D', 'G', 'B', 'e'];
+  const labelY = G.TOP + G.FRETS * G.FH + 20;
+  for (let s = 0; s < G.STRINGS; s++) {
+    const x = G.LEFT + s * G.SW;
+    svg.appendChild(svgText(STRING_NAMES[s], {
+      x, y: labelY,
+      'text-anchor': 'middle', 'font-size': '11',
+      fill: '#7878aa', 'font-family': 'monospace',
+    }));
   }
 
   document.getElementById('guitar-diagram').innerHTML = '';
