@@ -5,7 +5,7 @@
 // ════════════════════════════════════════════════════════
 
 const G = {
-  LEFT:   58,   // extra space for two-digit fret number labels on the left
+  LEFT:   72,   // wide left margin so two-digit fret labels never overlap the low-E string
   TOP:    44,
   STRINGS: 6,
   FRETS:   5,
@@ -60,7 +60,7 @@ function renderGuitar(g) {
     const y = G.TOP + row * G.FH + G.FH / 2 + 5;
     const isStart = fretNum === g.startFret && g.startFret > 1;
     svg.appendChild(svgText(fretNum, {
-      x: G.LEFT - 10, y,
+      x: G.LEFT - 16, y,
       'text-anchor': 'end', 'font-size': '13',
       fill: isStart ? '#f0c040' : '#aaaacc',
       'font-family': 'monospace', 'font-weight': 'bold',
